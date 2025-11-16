@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Video Generator</title>
+    <link rel="stylesheet" href="generate.css">
+</head>
+<body>
+    <!-- Input Section -->
+    <div id="input-container" class="container active">
+        <div class="content">
+            <h1>Lives of Infamous Men</h1>
+            <p class="subtitle">Generate a unique video montage with randomized clip selection</p>
+
+            <div class="controls">
+                <button id="generate-btn" class="primary-btn">
+                    Generate Video
+                </button>
+                <p class="info-text">Each generation creates a unique video from the same text</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div id="loading-container" class="container">
+        <div class="content">
+            <div class="loading-animation">
+                <div class="spinner">
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                    <div class="segment"></div>
+                </div>
+            </div>
+
+            <h2 id="loading-status">Analyzing text...</h2>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="loading-detail" class="loading-detail">Processing your input</p>
+        </div>
+    </div>
+
+    <!-- Player Section -->
+    <div id="player-container" class="container">
+        <div class="content">
+            <div class="player-header">
+                <h2>Your Generated Video</h2>
+                <button id="generate-another" class="secondary-btn">Generate Another</button>
+            </div>
+
+            <video
+                id="video"
+                controls
+                width="960"
+                height="720"
+                class="video-player"
+            ></video>
+
+            <div id="video-stats" class="video-stats">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+
+            <div class="session-info">
+                <p>Session ID: <code id="session-id"></code></p>
+                <p>Each generation creates a unique video with randomized clip selection</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Section -->
+    <div id="error-container" class="container">
+        <div class="content">
+            <h2>Oops! Something went wrong</h2>
+            <p id="error-message" class="error-message"></p>
+            <button id="try-again" class="primary-btn">Try Again</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="generate.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Development files
+node_modules/
+*.log
+.env
+.env.local
+
+# Documentation (not needed in production)
+README.md
+DEPLOYMENT.md
+*.md
+
+# Config files (not needed at runtime)
+.gitignore
+.env.example
+
+# Test data
+test_hls/
+test_manifest*.json
+
+# IDE
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+*.swp

@@ -1,0 +1,21 @@
+{
+  "name": "lives-hls-generator",
+  "version": "1.0.0",
+  "description": "Dynamic HLS playlist generator for Lives of Infamous Men with session-based randomization",
+  "main": "hls-generator-server.js",
+  "scripts": {
+    "start": "node hls-generator-server.js",
+    "dev": "node hls-generator-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["hls", "video", "generator", "streaming"],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5"
+  }
+}
