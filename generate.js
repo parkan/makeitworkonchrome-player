@@ -533,23 +533,21 @@ function setupSpectrogram() {
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Only draw if there's audio data
-      if (dataArray.some(val => val > 0)) {
-        const barWidth = (canvas.width / bufferLength) * 2;
+      // Always draw bars (even when muted, they'll just be minimal)
+      const barWidth = (canvas.width / bufferLength) * 2;
 
-        for (let i = 0; i < bufferLength; i++) {
-          const barHeight = (dataArray[i] / 255) * canvas.height;
-          const x = i * barWidth;
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * canvas.height;
+        const x = i * barWidth;
 
-          // Create gradient for each bar (red → pink → blue)
-          const gradient = ctx.createLinearGradient(0, 0, 0, barHeight);
-          gradient.addColorStop(0, '#ff0000');
-          gradient.addColorStop(0.5, '#ff99cc');
-          gradient.addColorStop(1, '#0000ff');
+        // Create gradient for each bar (red → pink → blue)
+        const gradient = ctx.createLinearGradient(0, 0, 0, barHeight || 1);
+        gradient.addColorStop(0, '#ff0000');
+        gradient.addColorStop(0.5, '#ff99cc');
+        gradient.addColorStop(1, '#0000ff');
 
-          ctx.fillStyle = gradient;
-          ctx.fillRect(x, 0, barWidth, barHeight);
-        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, 0, barWidth, barHeight);
       }
     }
 
