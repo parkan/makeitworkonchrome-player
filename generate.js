@@ -48,6 +48,8 @@ const elements = {
   videoStats: document.getElementById('video-stats'),
   generateAnother: document.getElementById('generate-another'),
   minimapProgress: document.getElementById('minimap-progress'),
+  playPauseBtn: document.getElementById('play-pause-btn'),
+  fullscreenBtn: document.getElementById('fullscreen-btn'),
 
   // Error
   errorMessage: document.getElementById('error-message'),
@@ -172,11 +174,13 @@ async function generateVideo() {
  * Load and play HLS video
  */
 function loadVideo(playlistUrl, sessionId, stats) {
-  // Update session info
-  elements.sessionId.textContent = sessionId;
+  // Update session info (if element exists)
+  if (elements.sessionId) {
+    elements.sessionId.textContent = sessionId;
+  }
 
-  // Update stats
-  if (stats) {
+  // Update stats (if element exists)
+  if (stats && elements.videoStats) {
     elements.videoStats.innerHTML = `
       <div class="stat">
         <span class="stat-label">Total Clips:</span>
@@ -308,7 +312,7 @@ function loadVideo(playlistUrl, sessionId, stats) {
       if (elements.video.duration > 0) {
         const progress = elements.video.currentTime / elements.video.duration;
         const containerHeight = minimapContainer.clientHeight;
-        const padding = 10; // Top/bottom padding
+        const padding = 20; // Top/bottom padding to align with text content
         const topPosition = padding + (progress * (containerHeight - padding * 2));
         elements.minimapProgress.style.top = `${topPosition}px`;
       }
@@ -321,7 +325,7 @@ function loadVideo(playlistUrl, sessionId, stats) {
       const rect = minimapContainer.getBoundingClientRect();
       const y = e.clientY - rect.top;
       const containerHeight = minimapContainer.clientHeight;
-      const padding = 10;
+      const padding = 20; // Top/bottom padding to align with text content
 
       // Calculate progress (0 to 1)
       let progress = (y - padding) / (containerHeight - padding * 2);
@@ -396,6 +400,66 @@ elements.generateAnother.addEventListener('click', reset);
 
 // Try again button
 elements.tryAgain.addEventListener('click', reset);
+
+// Custom video controls
+if (elements.playPauseBtn) {
+  elements.playPauseBtn.addEventListener('click', () => {
+    if (elements.video.paused) {
+      elements.video.play();
+    } else {
+      elements.video.pause();
+    }
+  });
+
+  // Update play/pause icon
+  elements.video.addEventListener('play', () => {
+    elements.playPauseBtn.querySelector('.play-icon').style.display = 'none';
+    elements.playPauseBtn.querySelector('.pause-icon').style.display = 'block';
+  });
+
+  elements.video.addEventListener('pause', () => {
+    elements.playPauseBtn.querySelector('.play-icon').style.display = 'block';
+    elements.playPauseBtn.querySelector('.pause-icon').style.display = 'none';
+  });
+
+  // Click video to play/pause
+  elements.video.addEventListener('click', () => {
+    if (elements.video.paused) {
+      elements.video.play();
+    } else {
+      elements.video.pause();
+    }
+  });
+}
+
+if (elements.fullscreenBtn) {
+  elements.fullscreenBtn.addEventListener('click', () => {
+    const playerContainer = document.querySelector('.player-with-minimap');
+    if (!document.fullscreenElement) {
+      // Fullscreen the container (includes video + minimap)
+      if (playerContainer.requestFullscreen) {
+        playerContainer.requestFullscreen();
+      } else if (playerContainer.webkitRequestFullscreen) {
+        playerContainer.webkitRequestFullscreen();
+      } else if (playerContainer.mozRequestFullScreen) {
+        playerContainer.mozRequestFullScreen();
+      } else if (playerContainer.msRequestFullscreen) {
+        playerContainer.msRequestFullscreen();
+      }
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  });
+}
 
 // Initialize
 console.log('Lives of Infamous Men - Video Generator initialized');

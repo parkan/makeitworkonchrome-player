@@ -25,8 +25,6 @@ body {
 .container {
   display: none;
   width: 100%;
-  max-width: 1200px;
-  padding: 2rem;
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.5s ease, transform 0.5s ease;
@@ -37,6 +35,17 @@ body {
   justify-content: center;
   align-items: center;
   animation: fadeIn 0.5s ease forwards;
+}
+
+/* Player container fills viewport */
+#player-container.active {
+  padding: 0;
+  max-width: 100%;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 @keyframes fadeIn {
@@ -234,22 +243,11 @@ h2 {
   border-radius: 2px;
 }
 
-/* Video player */
-.player-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
+/* Video player - fullscreen by default */
 .video-player {
   width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  height: 100%;
+  object-fit: contain;
   background: #000;
 }
 
@@ -371,33 +369,33 @@ h2 {
 /* Minimap */
 .player-with-minimap {
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  width: fit-content;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
 }
 
 .minimap-container {
   position: absolute;
   right: 10px;
-  top: 10px;
-  bottom: 10px;
-  width: 150px;
-  background: rgba(0, 0, 0, 0.7);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12vw;
+  height: 88vh;
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 10px 5px;
   overflow: hidden;
   cursor: pointer;
-  transition: background 0.2s ease, width 0.2s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   z-index: 100;
   backdrop-filter: blur(10px);
 }
 
 .minimap-container:hover {
-  background: rgba(0, 0, 0, 0.85);
-  width: 180px;
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
 .minimap-image {
@@ -421,7 +419,7 @@ h2 {
   height: 3px;
   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
   box-shadow: 0 0 15px rgba(102, 126, 234, 0.9), 0 0 5px rgba(255, 255, 255, 0.5);
-  top: 15px;
+  top: 20px;
   transition: top 0.05s ease-out;
   z-index: 10;
   pointer-events: none;
@@ -432,6 +430,101 @@ h2 {
   box-shadow: 0 0 20px rgba(102, 126, 234, 1), 0 0 10px rgba(255, 255, 255, 0.8);
 }
 
+/* Custom video controls */
+.custom-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 101;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.player-with-minimap:hover .custom-controls {
+  opacity: 1;
+}
+
+.control-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.control-btn:hover {
+  background: rgba(102, 126, 234, 0.8);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Fullscreen mode */
+.player-with-minimap:fullscreen,
+.player-with-minimap:-webkit-full-screen,
+.player-with-minimap:-moz-full-screen,
+.player-with-minimap:-ms-fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  background: #000;
+  position: relative !important;
+}
+
+.player-with-minimap:fullscreen .video-player,
+.player-with-minimap:-webkit-full-screen .video-player,
+.player-with-minimap:-moz-full-screen .video-player,
+.player-with-minimap:-ms-fullscreen .video-player {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.player-with-minimap:fullscreen .minimap-container,
+.player-with-minimap:-webkit-full-screen .minimap-container,
+.player-with-minimap:-moz-full-screen .minimap-container,
+.player-with-minimap:-ms-fullscreen .minimap-container {
+  display: block !important;
+  position: absolute !important;
+  height: 88vh !important;
+  width: 12vw !important;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%) !important;
+  z-index: 1000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.player-with-minimap:fullscreen .custom-controls,
+.player-with-minimap:-webkit-full-screen .custom-controls,
+.player-with-minimap:-moz-full-screen .custom-controls,
+.player-with-minimap:-ms-fullscreen .custom-controls {
+  display: flex !important;
+  position: absolute !important;
+  opacity: 1 !important;
+  z-index: 1000 !important;
+  bottom: 20px;
+  left: 20px;
+  visibility: visible !important;
+}
+
 @media (max-width: 1200px) {
   .player-with-minimap {
     flex-direction: column;
@@ -439,12 +532,7 @@ h2 {
   }
 
   .minimap-container {
-    height: 300px;
-    width: 100%;
-    max-width: 600px;
-  }
-
-  .minimap-image {
-    height: 280px;
+    width: 20vw;
+    height: 75vh;
   }
 }
