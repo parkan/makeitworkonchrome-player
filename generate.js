@@ -43,7 +43,6 @@ const elements = {
   loadingStatus: document.getElementById('loading-status'),
   loadingDetail: document.getElementById('loading-detail'),
   progressFill: document.getElementById('progress-fill'),
-  spinner: document.querySelector('.spinner'),
 
   // Player
   video: document.getElementById('video'),
@@ -104,15 +103,6 @@ async function animateLoading() {
       elements.loadingStatus.textContent = stage.text;
       elements.loadingDetail.textContent = stage.detail;
       elements.progressFill.style.width = `${progress}%`;
-
-      // Add pulse effect at certain points
-      if (progress > 30 && progress < 35) {
-        elements.spinner.classList.add('pulse');
-      } else if (progress > 60 && progress < 65) {
-        elements.spinner.classList.add('pulse');
-      } else {
-        elements.spinner.classList.remove('pulse');
-      }
 
       // Complete
       if (progress >= 100) {
@@ -308,6 +298,9 @@ function loadVideo(playlistUrl, sessionId, stats) {
   // Show player
   showContainer(elements.playerContainer);
 
+  // Setup spectrogram visualization
+  setupSpectrogram();
+
   // Update minimap progress line as video plays
   const minimapContainer = document.querySelector('.minimap-container');
 
@@ -395,10 +388,13 @@ function reset() {
 
 // Event Listeners
 
-// Generate button - just call generateVideo()
-elements.generateBtn.addEventListener('click', () => {
-  generateVideo();
-});
+// Landing page - click to generate video
+const landingClickable = document.getElementById('landing-clickable');
+if (landingClickable) {
+  landingClickable.addEventListener('click', () => {
+    generateVideo();
+  });
+}
 
 // Generate another button
 elements.generateAnother.addEventListener('click', reset);
@@ -582,10 +578,8 @@ function setupSpectrogram() {
   }
 }
 
-// Initialize spectrogram when video element exists
-if (elements.spectrogram && elements.video) {
-  setupSpectrogram();
-}
+// Initialize spectrogram after video starts playing (to ensure video source is loaded)
+// This will be called from loadVideo() function
 
 // Initialize
 console.log('Lives of Infamous Men - Video Generator initialized');

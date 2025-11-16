@@ -12,16 +12,10 @@
 <body>
     <!-- Input Section -->
     <div id="input-container" class="container active">
-        <div class="content">
-            <h1>Lives of Infamous Men</h1>
-            <p class="subtitle">Generate a unique video montage with randomized clip selection</p>
-
-            <div class="controls">
-                <button id="generate-btn" class="primary-btn">
-                    Generate Video
-                </button>
-                <p class="info-text">Each generation creates a unique video from the same text</p>
-            </div>
+        <div class="content" id="landing-clickable">
+            <img src="foucault.png" alt="Michel Foucault" class="landing-portrait">
+            <h1 class="landing-title">The (Infinite) Lives of Infamous Men</h1>
+            <p class="landing-author">Michel Foucault</p>
         </div>
     </div>
 
@@ -29,16 +23,7 @@
     <div id="loading-container" class="container">
         <div class="content">
             <div class="loading-animation">
-                <div class="spinner">
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                    <div class="segment"></div>
-                </div>
+                <img src="foucault.png" alt="Loading" class="spinner-image">
             </div>
 
             <h2 id="loading-status">Analyzing text...</h2>
