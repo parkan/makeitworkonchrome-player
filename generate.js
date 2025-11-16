@@ -50,6 +50,8 @@ const elements = {
   minimapProgress: document.getElementById('minimap-progress'),
   playPauseBtn: document.getElementById('play-pause-btn'),
   fullscreenBtn: document.getElementById('fullscreen-btn'),
+  muteIndicator: document.getElementById('mute-indicator'),
+  spectrogram: document.getElementById('spectrogram'),
 
   // Error
   errorMessage: document.getElementById('error-message'),
@@ -422,12 +424,20 @@ if (elements.playPauseBtn) {
     elements.playPauseBtn.querySelector('.pause-icon').style.display = 'none';
   });
 
-  // Click video to play/pause
+  // Click video to toggle mute (like reference UI)
   elements.video.addEventListener('click', () => {
-    if (elements.video.paused) {
-      elements.video.play();
-    } else {
-      elements.video.pause();
+    elements.video.muted = !elements.video.muted;
+  });
+
+  // Spacebar to play/pause
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && e.target === document.body) {
+      e.preventDefault();
+      if (elements.video.paused) {
+        elements.video.play();
+      } else {
+        elements.video.pause();
+      }
     }
   });
 }
@@ -457,6 +467,35 @@ if (elements.fullscreenBtn) {
       } else if (document.msExitFullscreen) {
         document.msExitFullscreen();
       }
+    }
+  });
+}
+
+// Mute indicator handling
+if (elements.muteIndicator && elements.video) {
+  // Update indicator visibility based on mute state
+  const updateMuteIndicator = () => {
+    if (elements.muteIndicator) {
+      elements.muteIndicator.style.display = elements.video.muted ? 'block' : 'none';
+    }
+  };
+
+  // Listen for volume changes
+  elements.video.addEventListener('volumechange', updateMuteIndicator);
+
+  // Show mute indicator when video starts playing (since it starts muted)
+  elements.video.addEventListener('play', updateMuteIndicator, { once: true });
+
+  // Click mute indicator to toggle mute
+  elements.muteIndicator.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent event from bubbling to video element
+    elements.video.muted = !elements.video.muted;
+  });
+
+  // M key to toggle mute
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') {
+      elements.video.muted = !elements.video.muted;
     }
   });
 }
