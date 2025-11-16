@@ -24,6 +24,9 @@ const MAX_LOADING_TIME = 5000; // Maximum 5 seconds
 let currentSession = null;
 let hls = null;
 let loadingInterval = null;
+let audioContext = null;
+let analyser = null;
+let animationId = null;
 
 // Elements
 const elements = {
@@ -498,6 +501,90 @@ if (elements.muteIndicator && elements.video) {
       elements.video.muted = !elements.video.muted;
     }
   });
+}
+
+// Spectrogram visualization
+function setupSpectrogram() {
+  if (!elements.spectrogram || !elements.video) return;
+
+  const canvas = elements.spectrogram;
+  const ctx = canvas.getContext('2d');
+
+  // Setup audio context and analyser
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaElementSource(elements.video);
+      analyser = audioContext.createAnalyser();
+
+      analyser.fftSize = 256; // Match reference implementation
+      analyser.smoothingTimeConstant = 0.8;
+
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+    }
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function draw() {
+      animationId = requestAnimationFrame(draw);
+
+      if (!analyser || !ctx) return;
+
+      analyser.getByteFrequencyData(dataArray);
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Only draw if there's audio data
+      if (dataArray.some(val => val > 0)) {
+        const barWidth = (canvas.width / bufferLength) * 2;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          const x = i * barWidth;
+
+          // Create gradient for each bar (red → pink → blue)
+          const gradient = ctx.createLinearGradient(0, 0, 0, barHeight);
+          gradient.addColorStop(0, '#ff0000');
+          gradient.addColorStop(0.5, '#ff99cc');
+          gradient.addColorStop(1, '#0000ff');
+
+          ctx.fillStyle = gradient;
+          ctx.fillRect(x, 0, barWidth, barHeight);
+        }
+      }
+    }
+
+    // Start drawing when video plays
+    const startDrawing = () => {
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      if (!animationId) {
+        draw();
+      }
+    };
+
+    elements.video.addEventListener('play', startDrawing);
+
+    // Stop drawing when video pauses
+    elements.video.addEventListener('pause', () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    });
+
+  } catch (error) {
+    console.log('Audio context setup failed:', error);
+  }
+}
+
+// Initialize spectrogram when video element exists
+if (elements.spectrogram && elements.video) {
+  setupSpectrogram();
 }
 
 // Initialize
