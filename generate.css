@@ -367,3 +367,84 @@ h2 {
   gap: 1rem;
   margin: 2rem 0;
 }
+
+/* Minimap */
+.player-with-minimap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.minimap-container {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  bottom: 10px;
+  width: 150px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 5px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.2s ease, width 0.2s ease;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.minimap-container:hover {
+  background: rgba(0, 0, 0, 0.85);
+  width: 180px;
+}
+
+.minimap-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.minimap-container:hover .minimap-image {
+  opacity: 0.7;
+}
+
+.minimap-progress-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.9), 0 0 5px rgba(255, 255, 255, 0.5);
+  top: 15px;
+  transition: top 0.05s ease-out;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.minimap-container:hover .minimap-progress-line {
+  height: 4px;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 1), 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 1200px) {
+  .player-with-minimap {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .minimap-container {
+    height: 300px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .minimap-image {
+    height: 280px;
+  }
+}

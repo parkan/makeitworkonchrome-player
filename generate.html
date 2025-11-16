@@ -54,13 +54,20 @@
                 <button id="generate-another" class="secondary-btn">Generate Another</button>
             </div>
 
-            <video
-                id="video"
-                controls
-                width="960"
-                height="720"
-                class="video-player"
-            ></video>
+            <div class="player-with-minimap">
+                <video
+                    id="video"
+                    controls
+                    width="960"
+                    height="720"
+                    class="video-player"
+                ></video>
+
+                <div class="minimap-container">
+                    <img src="minimap.png" alt="Script minimap" class="minimap-image">
+                    <div id="minimap-progress" class="minimap-progress-line"></div>
+                </div>
+            </div>
 
             <div id="video-stats" class="video-stats">
                 <!-- Stats will be populated by JavaScript -->

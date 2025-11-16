@@ -47,6 +47,7 @@ const elements = {
   sessionId: document.getElementById('session-id'),
   videoStats: document.getElementById('video-stats'),
   generateAnother: document.getElementById('generate-another'),
+  minimapProgress: document.getElementById('minimap-progress'),
 
   // Error
   errorMessage: document.getElementById('error-message'),
@@ -297,6 +298,61 @@ function loadVideo(playlistUrl, sessionId, stats) {
 
   // Show player
   showContainer(elements.playerContainer);
+
+  // Update minimap progress line as video plays
+  const minimapContainer = document.querySelector('.minimap-container');
+
+  if (elements.minimapProgress && minimapContainer) {
+    // Update progress line position
+    elements.video.addEventListener('timeupdate', () => {
+      if (elements.video.duration > 0) {
+        const progress = elements.video.currentTime / elements.video.duration;
+        const containerHeight = minimapContainer.clientHeight;
+        const padding = 10; // Top/bottom padding
+        const topPosition = padding + (progress * (containerHeight - padding * 2));
+        elements.minimapProgress.style.top = `${topPosition}px`;
+      }
+    });
+
+    // Make minimap clickable for seeking
+    let isSeeking = false;
+
+    const seekToPosition = (e) => {
+      const rect = minimapContainer.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const containerHeight = minimapContainer.clientHeight;
+      const padding = 10;
+
+      // Calculate progress (0 to 1)
+      let progress = (y - padding) / (containerHeight - padding * 2);
+      progress = Math.max(0, Math.min(1, progress)); // Clamp between 0 and 1
+
+      // Seek video
+      if (elements.video.duration > 0) {
+        elements.video.currentTime = progress * elements.video.duration;
+      }
+    };
+
+    minimapContainer.addEventListener('mousedown', (e) => {
+      isSeeking = true;
+      seekToPosition(e);
+      e.preventDefault();
+    });
+
+    minimapContainer.addEventListener('mousemove', (e) => {
+      if (isSeeking) {
+        seekToPosition(e);
+      }
+    });
+
+    const stopSeeking = () => {
+      isSeeking = false;
+    };
+
+    minimapContainer.addEventListener('mouseup', stopSeeking);
+    minimapContainer.addEventListener('mouseleave', stopSeeking);
+    document.addEventListener('mouseup', stopSeeking);
+  }
 }
 
 /**
