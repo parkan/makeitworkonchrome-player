@@ -7,8 +7,63 @@ Dynamic video generator that creates unique HLS video streams by assembling clip
 **Live Site**: Deployed on Railway
 **Project**: lives-hls-generator
 **Environment**: production
+**Base URL**: https://bacteria.farm
 
-## Recent Fixes (Session: 2025-11-16)
+## Recent Work (Session: 2025-11-20)
+
+### 1. Phrase Extraction Bug Fix (CRITICAL)
+**Problem**: Manifest showed only "1 phrases with clips" despite having 6884 video clips. All clips were incorrectly assigned to phrase "celine".
+
+**Root Cause**: Line 1262 in `prepare_hls_clips.py` `--skip-trimmed` path was missing:
+```python
+parts = ts_file.stem.split('_')
+```
+This caused `parts` variable to be undefined when trying to extract phrases from filenames.
+
+**Fix**: Added the missing line before phrase extraction loop at line 1262.
+
+**Result**:
+- Manifest now correctly shows **2346 phrases with clips**
+- Phrases properly distributed: 'adventure', 'common', 'mine', 'a wife', 'birth', etc.
+- Manifest size reduced from 2.3M to 1.2M (no longer duplicating all clips under single phrase)
+
+**Files Modified**:
+- `/builder/prepare_hls_clips.py` line 1262
+- `/builder/clips-manifest.json` and `/builder/player/clips-manifest.json` regenerated
+
+### 2. Comprehensive Code Analysis & Cleanup Plan
+**Motivation**: User identified that prepare_hls_clips.py has "gotten to be a bit of a mess" with:
+- Inconsistent code paths (phrase extraction duplicated in 5 places)
+- Not always getting complete coverage of missing phrase clips with static clips
+- General technical debt
+
+**Analysis Results**: Created comprehensive documentation:
+1. **`/builder/CLEANUP_PLAN.md`** - High-level refactoring strategy with phases
+2. **`/builder/REFACTOR_TECHNICAL_NOTES.md`** - Detailed technical specifications
+
+**Key Findings**:
+- **5 duplicate phrase extraction implementations** with subtle differences (lines 779-789, 862-872, 906-916, 1174-1183, 1258-1269)
+- **No validation** that all tokens have coverage (either phrase clip or static clip)
+- **Long functions** need decomposition (160-234 lines)
+- **Inconsistent error handling** patterns
+- **Magic numbers** scattered throughout (no config object)
+- **No unit tests** for critical functions
+
+**Priority Issues**:
+1. Create single `extract_phrase_from_filename()` function (HIGHEST)
+2. Add `validate_coverage()` to ensure 100% token coverage
+3. Create `ProcessingConfig` dataclass for configuration
+4. Standardize error handling patterns
+5. Add progress bars for long operations
+6. Break down long functions
+
+**Status**: Planning complete, ready to begin refactoring in next session.
+
+**See Also**:
+- `/builder/CLEANUP_PLAN.md` - Refactoring phases and code examples
+- `/builder/REFACTOR_TECHNICAL_NOTES.md` - Implementation details, edge cases, test strategy
+
+## Previous Fixes (Session: 2025-11-16)
 
 ### 1. Scrollbar Issue on Landing Page
 **Problem**: Hovering over Foucault portrait/title caused scrollbars to appear, shifting viewport
@@ -42,6 +97,42 @@ for (let i = 0; i < bufferLength; i++) {
 }
 ```
 **File**: `generate.js` lines 536-551
+
+### 3. TTS-Static Audio for Missing Words (NEW)
+**Feature**: Static clips now include TTS-vocoded audio of the word being spoken
+
+**Implementation**: When generating static fallback clips for words not found in the original video, the system now:
+1. Generates TTS audio using espeakng (Python module)
+2. Applies vocoding to blend speech with noise (80% speech, 20% noise)
+3. Adds TV static texture (band-limited 2500-7000 Hz)
+4. Adds analog artifacts: 50Hz hum, tuning flutter, capacitor drift
+5. Uses this as the audio track for the static video clip
+
+**Result**: Missing words sound like they're being spoken through degraded TV transmission rather than pure static
+
+**Technical Details**:
+- Uses espeakng for TTS (speed=120, pitch=30, downpitched -4 semitones)
+- Librosa for audio processing (STFT, pitch shift, time stretch)
+- Duration-matched to clip length via time stretching
+- Preserves speech phase for intelligibility
+- Mix ratio: 76% vocoded speech + 24% TV static
+
+**Behavior**:
+- Applied to: Actual words only (not punctuation, not generic/silence clips)
+- Punctuation clips: Use original static audio with 50% volume
+- Generic/silence clips: Use original static audio
+- Fallback: If TTS generation fails, uses original static audio
+
+**Files**:
+- Function: `generate_tts_static_audio()` in `/builder/prepare_hls_clips.py` lines 182-327
+- Integration: `extract_static_clip_to_ts()` lines 402-460
+- Dependencies: Added to `/builder/pyproject.toml`:
+  - `espeakng>=1.0.3` - Python TTS module
+  - `librosa>=0.10.0` - Audio processing
+  - `soundfile>=0.12.0` - Audio I/O
+  - `numpy>=1.24.0` - Numerical operations
+
+**Reference**: Based on `/builder/tts.py` example script
 
 ## Previous Major Features (From Earlier Sessions)
 
@@ -172,6 +263,9 @@ Shows generation metadata:
 1. **Trimmed clips** (`/work/trimmed/*.mkv`): 960×720, SAR=1:1, DAR=4:3
    - Extracted from original video with burned-in subtitles
    - Matched to specific words/phrases from text
+   - Filename format: `{SOURCE}_{DATE}_{TIME}_{SHOW}_{START}_{END}_{PHRASE}.mkv`
+   - Example: `ALJAZAM_20130826_213000_Adrenalin_Nation_1754_1814_adventure.mkv`
+   - Converted to .ts with same basename: `ALJAZAM_20130826_213000_Adrenalin_Nation_1754_1814_adventure.ts`
 
 2. **Static clips** (`/work/hls_clips/*.ts`): 960×720, SAR=1:1, DAR=4:3
    - Fallback clips from static video source

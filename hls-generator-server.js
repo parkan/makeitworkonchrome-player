@@ -14,8 +14,7 @@ const cors = require('cors');
 const CONFIG = {
   port: process.env.PORT || 3001,
   manifestPath: process.env.MANIFEST_PATH || './clips-manifest.json',
-  clipsDir: process.env.CLIPS_DIR || './test_hls',
-  r2BaseUrl: process.env.R2_BASE_URL || null, // e.g., 'https://pub-XXXX.r2.dev'
+  r2BaseUrl: process.env.R2_BASE_URL || null, // e.g., 'https://pub-XXXX.r2.dev' or 'http://localhost:8080'
   sessionTTL: 3600000, // 1 hour in milliseconds
   maxPhraseLength: 10,
   cleanupInterval: 300000 // 5 minutes
@@ -36,7 +35,9 @@ class HLSBuilder {
       this.phraseMap = this.manifest.phraseMap || {};
       this.phraseClips = this.manifest.phraseClips || {};
       this.staticClips = this.manifest.staticClips || {};
-      this.baseUrl = this.manifest.baseUrl || '/hls_clips/';
+
+      // Base URL from environment (not manifest - it's environment-specific)
+      this.baseUrl = CONFIG.r2BaseUrl || '/hls_clips/';
 
       // Load fixed text and tokens from manifest
       this.fixedText = this.manifest.fixedText;
@@ -535,16 +536,15 @@ app.get('/session/:sessionId', (req, res) => {
 // Serve static frontend files (CSS, JS, etc.) - must come after route handlers
 app.use(express.static(__dirname));
 
-// Serve clip files
-app.use('/test_hls', express.static(CONFIG.clipsDir));
-app.use('/hls_clips', express.static(CONFIG.clipsDir));
+// Clips are ALWAYS served from external source (R2 in prod, separate static server in dev)
+// This server only generates playlists and serves the frontend
+console.log(`\n✓ Clips served from: ${CONFIG.r2BaseUrl || 'relative paths'}`)
 
 // Start server
 app.listen(CONFIG.port, () => {
   console.log(`\n=== HLS Generator Server ===`);
   console.log(`Port: ${CONFIG.port}`);
   console.log(`Manifest: ${CONFIG.manifestPath}`);
-  console.log(`Clips: ${CONFIG.clipsDir}`);
   console.log(`\nServer running at http://localhost:${CONFIG.port}`);
   console.log(`\nAPI Endpoints:`);
   console.log(`  POST /generate - Generate playlist from text`);
