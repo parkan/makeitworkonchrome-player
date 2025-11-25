@@ -55,6 +55,12 @@ const elements = {
   muteIndicator: document.getElementById('mute-indicator'),
   spectrogram: document.getElementById('spectrogram'),
 
+  // About overlay
+  aboutBtn: document.getElementById('about-btn'),
+  aboutOverlay: document.getElementById('about-overlay'),
+  aboutCloseBtn: document.getElementById('about-close-btn'),
+  clipSourcesList: document.getElementById('clip-sources-list'),
+
   // Error
   errorMessage: document.getElementById('error-message'),
   tryAgain: document.getElementById('try-again')
@@ -578,6 +584,131 @@ function setupSpectrogram() {
 
 // Initialize spectrogram after video starts playing (to ensure video source is loaded)
 // This will be called from loadVideo() function
+
+// About overlay functionality
+function openAboutOverlay() {
+  if (elements.aboutOverlay) {
+    elements.aboutOverlay.classList.add('active');
+    // Pause video when opening about
+    if (elements.video && !elements.video.paused) {
+      elements.video.pause();
+    }
+    // Populate clip sources if we have a session
+    populateClipSources();
+  }
+}
+
+function closeAboutOverlay() {
+  if (elements.aboutOverlay) {
+    elements.aboutOverlay.classList.remove('active');
+  }
+}
+
+/**
+ * Extract identifier from clip filename
+ * Filename format: NETWORK_DATE_TIME_Show_Title_start_end_phrase.ts
+ * Example: CSPAN2_20180819_170000_Michael_Chertoff_Exploding_Data_1234_1294_phrase.ts
+ * We need to extract the identifier (everything before the timestamp numbers and phrase)
+ */
+function extractIdentifierFromFilename(filename) {
+  // Remove .ts extension
+  let name = filename.replace(/\.ts$/, '');
+
+  // Filename format: NETWORK_DATE_TIME_Title_Words_startFrame_endFrame_phrase
+  // We need everything up to the last three underscore-separated parts (start_end_phrase)
+
+  // Split by underscore
+  const parts = name.split('_');
+
+  // Need at least 4 parts: network, date, time, and something after
+  if (parts.length < 4) {
+    return null;
+  }
+
+  // The last part is the phrase word, and the two before that are frame numbers
+  // Remove the last 3 parts (startFrame, endFrame, phrase)
+  const identifierParts = parts.slice(0, -3);
+
+  // Reconstruct the identifier
+  return identifierParts.join('_');
+}
+
+/**
+ * Populate the clip sources list from current session
+ */
+async function populateClipSources() {
+  if (!elements.clipSourcesList || !currentSession) {
+    return;
+  }
+
+  const sessionId = currentSession.sessionId;
+
+  try {
+    // Fetch session details to get the script with all clips
+    const response = await fetch(`${API_URL}/session/${sessionId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch session details');
+    }
+
+    const sessionData = await response.json();
+    const script = sessionData.script || [];
+
+    // Extract unique identifiers from phrase clips
+    const identifiers = new Set();
+
+    script.forEach(clip => {
+      if (clip.type === 'phrase' && clip.filename) {
+        const identifier = extractIdentifierFromFilename(clip.filename);
+        if (identifier) {
+          identifiers.add(identifier);
+        }
+      }
+    });
+
+    // Build the clip sources list
+    if (identifiers.size === 0) {
+      elements.clipSourcesList.innerHTML = '<p class="loading-sources">No external clips in this generation.</p>';
+      return;
+    }
+
+    // Create links for each unique identifier
+    const links = Array.from(identifiers).map(identifier => {
+      const url = `https://archive.org/details/${identifier}`;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="clip-source-link">${identifier}</a>`;
+    });
+
+    elements.clipSourcesList.innerHTML = links.join('');
+
+  } catch (error) {
+    console.error('Failed to load clip sources:', error);
+    elements.clipSourcesList.innerHTML = '<p class="loading-sources">Unable to load clip sources.</p>';
+  }
+}
+
+// About button event listeners
+if (elements.aboutBtn) {
+  elements.aboutBtn.addEventListener('click', openAboutOverlay);
+}
+
+if (elements.aboutCloseBtn) {
+  elements.aboutCloseBtn.addEventListener('click', closeAboutOverlay);
+}
+
+// Close about overlay when clicking outside content
+if (elements.aboutOverlay) {
+  elements.aboutOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.aboutOverlay) {
+      closeAboutOverlay();
+    }
+  });
+}
+
+// Close about overlay with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && elements.aboutOverlay && elements.aboutOverlay.classList.contains('active')) {
+    closeAboutOverlay();
+  }
+});
 
 // Initialize
 console.log('Lives of Infamous Men - Video Generator initialized');
