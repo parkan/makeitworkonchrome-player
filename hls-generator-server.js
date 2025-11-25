@@ -20,7 +20,6 @@ const CONFIG = {
   cleanupInterval: 300000 // 5 minutes
 };
 
-// In-memory session storage (use Redis for production)
 const sessions = new Map();
 
 class HLSBuilder {
@@ -31,15 +30,12 @@ class HLSBuilder {
       const manifestData = fs.readFileSync(manifestPath, 'utf8');
       this.manifest = JSON.parse(manifestData);
 
-      // Extract data from manifest
       this.phraseMap = this.manifest.phraseMap || {};
       this.phraseClips = this.manifest.phraseClips || {};
       this.staticClips = this.manifest.staticClips || {};
 
-      // Base URL from environment (not manifest - it's environment-specific)
       this.baseUrl = CONFIG.r2BaseUrl || '/hls_clips/';
 
-      // Load fixed text and tokens from manifest
       this.fixedText = this.manifest.fixedText;
       this.fixedTokens = this.manifest.fixedTokens;
 
@@ -211,7 +207,6 @@ class HLSBuilder {
    * Get static clip for unmatched word
    */
   getStaticClip(token) {
-    // Check if it's punctuation
     if (/^[^\w\s]+$/.test(token)) {
       // Map common punctuation variants
       let punct = token;
@@ -368,25 +363,20 @@ class HLSBuilder {
 
     console.log(`[${sessionId}] Using fixed text: ${tokens.length} tokens`);
 
-    // 2. Match phrases
     const matches = this.greedyMatchPhrases(tokens);
     console.log(`[${sessionId}] Matched: ${matches.length} phrases`);
 
-    // 3. Generate script with session-based randomization
     const script = this.generateScript(tokens, matches, sessionId);
     console.log(`[${sessionId}] Script: ${script.length} clips`);
 
-    // 4. Build M3U8 playlist
     const playlist = this.buildM3U8(script, sessionId);
 
     return { playlist, script, tokens, matches };
   }
 }
 
-// Initialize Express app
 const app = express();
 
-// Configure CORS to allow specific domain
 const corsOptions = {
   origin: ['https://thelivesofinfamousmen.isthisa.com', 'http://localhost:3001'],
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -397,16 +387,6 @@ app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' }));
 
-// Serve HLS clips with CORS headers from /work/hls_clips
-app.use('/hls_clips', express.static('/work/hls_clips', {
-  setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-  }
-}));
-
-// Initialize HLS builder
 let builder;
 try {
   builder = new HLSBuilder(CONFIG.manifestPath);
@@ -415,7 +395,6 @@ try {
   process.exit(1);
 }
 
-// Session cleanup
 setInterval(() => {
   const now = Date.now();
   for (const [sessionId, session] of sessions.entries()) {
@@ -426,14 +405,10 @@ setInterval(() => {
   }
 }, CONFIG.cleanupInterval);
 
-// Routes
-
-// Root route - serve generate.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'generate.html'));
 });
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -442,19 +417,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Generate playlist (uses fixed text from manifest, randomizes per session)
 app.post('/generate', (req, res) => {
-  // Generate session ID for randomization
   const sessionId = crypto.randomBytes(16).toString('hex');
 
   console.log(`\n=== New Generation Request ===`);
   console.log(`Session: ${sessionId}`);
 
   try {
-    // Generate playlist using fixed text with session-based randomization
     const result = builder.generatePlaylist(sessionId);
 
-    // Store session
     sessions.set(sessionId, {
       created: Date.now(),
       playlist: result.playlist,
@@ -463,7 +434,6 @@ app.post('/generate', (req, res) => {
       matches: result.matches
     });
 
-    // Calculate statistics
     const stats = {
       totalTokens: result.tokens.length,
       matchedPhrases: result.matches.length,
@@ -487,7 +457,6 @@ app.post('/generate', (req, res) => {
   }
 });
 
-// Serve playlist
 app.get('/:sessionId.m3u8', (req, res) => {
   const { sessionId } = req.params;
   const session = sessions.get(sessionId);
@@ -496,14 +465,12 @@ app.get('/:sessionId.m3u8', (req, res) => {
     return res.status(404).send('Session not found');
   }
 
-  // Update last accessed time
   session.lastAccessed = Date.now();
 
   res.type('application/vnd.apple.mpegurl');
   res.send(session.playlist);
 });
 
-// Get session info (for debugging)
 app.get('/session/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   const session = sessions.get(sessionId);
@@ -523,14 +490,10 @@ app.get('/session/:sessionId', (req, res) => {
   });
 });
 
-// Serve static frontend files (CSS, JS, etc.) - must come after route handlers
 app.use(express.static(__dirname));
 
-// Clips are ALWAYS served from external source (R2 in prod, separate static server in dev)
-// This server only generates playlists and serves the frontend
 console.log(`\n✓ Clips served from: ${CONFIG.r2BaseUrl || 'relative paths'}`)
 
-// Start server
 app.listen(CONFIG.port, () => {
   console.log(`\n=== HLS Generator Server ===`);
   console.log(`Port: ${CONFIG.port}`);

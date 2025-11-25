@@ -393,10 +393,8 @@ h2 {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  /* width: 12vw; */
   height: 88vh;
   background: rgba(0, 0, 0, 0.3);
-  /* border: 1px solid rgba(255, 255, 255, 0.1); */
   border-radius: 8px;
   padding: 10px 5px;
   overflow: hidden;
@@ -645,25 +643,6 @@ h2 {
     0 0 18px #c3e627,
     0 0 26px #c3e627;
   }
-}
-
-/* Comic Neue Font Classes */
-.comic-neue-light {
-  font-family: 'Comic Neue', cursive;
-  font-weight: 300;
-  font-style: normal;
-}
-
-.comic-neue-regular {
-  font-family: 'Comic Neue', cursive;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.comic-neue-bold {
-  font-family: 'Comic Neue', cursive;
-  font-weight: 700;
-  font-style: normal;
 }
 
 /* About Button */

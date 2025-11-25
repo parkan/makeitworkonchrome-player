@@ -20,7 +20,6 @@ const LOADING_STAGES = [
 const MIN_LOADING_TIME = 3000; // Minimum 3 seconds
 const MAX_LOADING_TIME = 5000; // Maximum 5 seconds
 
-// State
 let currentSession = null;
 let hls = null;
 let loadingInterval = null;
@@ -28,23 +27,17 @@ let audioContext = null;
 let analyser = null;
 let animationId = null;
 
-// Elements
 const elements = {
-  // Containers
   inputContainer: document.getElementById('input-container'),
   loadingContainer: document.getElementById('loading-container'),
   playerContainer: document.getElementById('player-container'),
   errorContainer: document.getElementById('error-container'),
 
-  // Input
   generateBtn: document.getElementById('generate-btn'),
-
-  // Loading
   loadingStatus: document.getElementById('loading-status'),
   loadingDetail: document.getElementById('loading-detail'),
   progressFill: document.getElementById('progress-fill'),
 
-  // Player
   video: document.getElementById('video'),
   sessionId: document.getElementById('session-id'),
   videoStats: document.getElementById('video-stats'),
@@ -55,13 +48,11 @@ const elements = {
   muteIndicator: document.getElementById('mute-indicator'),
   spectrogram: document.getElementById('spectrogram'),
 
-  // About overlay
   aboutBtn: document.getElementById('about-btn'),
   aboutOverlay: document.getElementById('about-overlay'),
   aboutCloseBtn: document.getElementById('about-close-btn'),
   clipSourcesList: document.getElementById('clip-sources-list'),
 
-  // Error
   errorMessage: document.getElementById('error-message'),
   tryAgain: document.getElementById('try-again')
 };
@@ -214,48 +205,30 @@ function loadVideo(playlistUrl, sessionId, stats) {
   // Load video with HLS.js
   if (Hls.isSupported()) {
     hls = new Hls({
-      enableWorker: true,
-      backBufferLength: 30,        // Reduce back buffer to save memory
-      maxBufferLength: 60,          // Increase forward buffer for smoother playback
-      maxMaxBufferLength: 120,      // Allow more buffer when bandwidth allows
-      maxBufferSize: 60*1000*1000,  // 60MB buffer size
-      maxBufferHole: 0.5,           // Allow small gaps in buffer
-      lowBufferWatchdogPeriod: 0.5, // Check buffer more frequently
-      highBufferWatchdogPeriod: 3,  // Check buffer health
-      nudgeOffset: 0.1,             // Small nudge for sync
-      nudgeMaxRetry: 10,            // Retry nudging
-      maxFragLookUpTolerance: 0.25, // Tolerance for fragment lookup
-      enableCEA708Captions: false,  // Disable captions processing
-      stretchShortVideoTrack: false,
-      progressive: true,             // Enable progressive loading
-      lowLatencyMode: false,         // We're not doing live streaming
-      testBandwidth: false,          // No bandwidth testing needed for local
-      fpsDroppedMonitoringPeriod: 5000,
-      fpsDroppedMonitoringThreshold: 0.2,
-      appendErrorMaxRetry: 3,
-      startFragPrefetch: true,       // Prefetch next fragment
-      manifestLoadingTimeOut: 10000,
-      manifestLoadingMaxRetry: 4,
-      manifestLoadingRetryDelay: 500,
-      manifestLoadingMaxRetryTimeout: 64000,
-      levelLoadingTimeOut: 10000,
-      levelLoadingMaxRetry: 4,
-      levelLoadingRetryDelay: 500,
-      levelLoadingMaxRetryTimeout: 64000,
-      fragLoadingTimeOut: 20000,
+      // Buffer settings
+      backBufferLength: 30,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
+      maxBufferSize: 60 * 1000 * 1000,
+
+      // Fragment loading - longer timeouts for reliability
+      fragLoadingTimeOut: 60000,
       fragLoadingMaxRetry: 6,
-      fragLoadingRetryDelay: 500,
-      fragLoadingMaxRetryTimeout: 64000,
-      startLevel: -1,               // Auto start level
-      autoStartLoad: true,          // Start loading immediately
-      maxLoadingDelay: 4,           // Max loading delay
-      minAutoBitrate: 0,
-      emeEnabled: false,
-      widevineLicenseUrl: undefined,
-      licenseXhrSetup: undefined,
-      capLevelOnFPSDrop: false,
-      capLevelToPlayerSize: false,
-      ignoreDevicePixelRatio: false
+      fragLoadingRetryDelay: 1000,
+      manifestLoadingTimeOut: 30000,
+      manifestLoadingMaxRetry: 4,
+      levelLoadingTimeOut: 30000,
+      levelLoadingMaxRetry: 4,
+
+      // Handle discontinuities
+      maxBufferHole: 0.5,
+      nudgeMaxRetry: 5,
+
+      // Disable unused features
+      enableCEA708Captions: false,
+      lowLatencyMode: false,
+      testBandwidth: false,
+      emeEnabled: false
     });
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -266,21 +239,37 @@ function loadVideo(playlistUrl, sessionId, stats) {
       });
     });
 
+    let mediaErrorRecoveryAttempts = 0;
+
     hls.on(Hls.Events.ERROR, (event, data) => {
+      console.warn('HLS error:', data.type, data.details, data.fatal ? '(fatal)' : '');
+
       if (data.fatal) {
-        console.error('Fatal HLS error:', data);
         switch(data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            console.log('Attempting to recover from network error');
+            console.log('Recovering from network error...');
             hls.startLoad();
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log('Attempting to recover from media error');
-            hls.recoverMediaError();
+            mediaErrorRecoveryAttempts++;
+            if (mediaErrorRecoveryAttempts <= 3) {
+              console.log(`Recovering from media error (attempt ${mediaErrorRecoveryAttempts})...`);
+              hls.recoverMediaError();
+            } else {
+              console.log('Swapping codec after repeated media errors...');
+              hls.swapAudioCodec();
+              hls.recoverMediaError();
+              mediaErrorRecoveryAttempts = 0;
+            }
             break;
           default:
             showError('Failed to load video');
             break;
+        }
+      } else if (data.details === 'bufferStalledError') {
+        console.log('Buffer stalled, nudging playback...');
+        if (elements.video.currentTime > 0) {
+          elements.video.currentTime += 0.1;
         }
       }
     });
@@ -392,9 +381,6 @@ function reset() {
   showContainer(elements.inputContainer);
 }
 
-// Event Listeners
-
-// Landing page - click to generate video
 const landingClickable = document.getElementById('landing-clickable');
 if (landingClickable) {
   landingClickable.addEventListener('click', () => {
@@ -402,13 +388,8 @@ if (landingClickable) {
   });
 }
 
-// Generate another button
 elements.generateAnother.addEventListener('click', reset);
-
-// Try again button
 elements.tryAgain.addEventListener('click', reset);
-
-// Custom video controls
 if (elements.playPauseBtn) {
   elements.playPauseBtn.addEventListener('click', () => {
     if (elements.video.paused) {
@@ -418,7 +399,6 @@ if (elements.playPauseBtn) {
     }
   });
 
-  // Update play/pause icon
   elements.video.addEventListener('play', () => {
     elements.playPauseBtn.querySelector('.play-icon').style.display = 'none';
     elements.playPauseBtn.querySelector('.pause-icon').style.display = 'block';
@@ -429,12 +409,10 @@ if (elements.playPauseBtn) {
     elements.playPauseBtn.querySelector('.pause-icon').style.display = 'none';
   });
 
-  // Click video to toggle mute (like reference UI)
   elements.video.addEventListener('click', () => {
     elements.video.muted = !elements.video.muted;
   });
 
-  // Spacebar to play/pause
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && e.target === document.body) {
       e.preventDefault();
@@ -447,57 +425,40 @@ if (elements.playPauseBtn) {
   });
 }
 
+function requestFullscreen(el) {
+  (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen).call(el);
+}
+
+function exitFullscreen() {
+  (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen).call(document);
+}
+
 if (elements.fullscreenBtn) {
   elements.fullscreenBtn.addEventListener('click', () => {
     const playerContainer = document.querySelector('.player-with-minimap');
     if (!document.fullscreenElement) {
-      // Fullscreen the container (includes video + minimap)
-      if (playerContainer.requestFullscreen) {
-        playerContainer.requestFullscreen();
-      } else if (playerContainer.webkitRequestFullscreen) {
-        playerContainer.webkitRequestFullscreen();
-      } else if (playerContainer.mozRequestFullScreen) {
-        playerContainer.mozRequestFullScreen();
-      } else if (playerContainer.msRequestFullscreen) {
-        playerContainer.msRequestFullscreen();
-      }
+      requestFullscreen(playerContainer);
     } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
+      exitFullscreen();
     }
   });
 }
 
-// Mute indicator handling
 if (elements.muteIndicator && elements.video) {
-  // Update indicator visibility based on mute state
   const updateMuteIndicator = () => {
     if (elements.muteIndicator) {
       elements.muteIndicator.style.display = elements.video.muted ? 'block' : 'none';
     }
   };
 
-  // Listen for volume changes
   elements.video.addEventListener('volumechange', updateMuteIndicator);
-
-  // Show mute indicator when video starts playing (since it starts muted)
   elements.video.addEventListener('play', updateMuteIndicator, { once: true });
 
-  // Click mute indicator to toggle mute
   elements.muteIndicator.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent event from bubbling to video element
     elements.video.muted = !elements.video.muted;
   });
 
-  // M key to toggle mute
   document.addEventListener('keydown', (e) => {
     if (e.key === 'm' || e.key === 'M') {
       elements.video.muted = !elements.video.muted;
@@ -505,14 +466,12 @@ if (elements.muteIndicator && elements.video) {
   });
 }
 
-// Spectrogram visualization
 function setupSpectrogram() {
   if (!elements.spectrogram || !elements.video) return;
 
   const canvas = elements.spectrogram;
   const ctx = canvas.getContext('2d');
 
-  // Setup audio context and analyser
   try {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -557,7 +516,6 @@ function setupSpectrogram() {
       }
     }
 
-    // Start drawing when video plays
     const startDrawing = () => {
       if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume();
@@ -568,8 +526,6 @@ function setupSpectrogram() {
     };
 
     elements.video.addEventListener('play', startDrawing);
-
-    // Stop drawing when video pauses
     elements.video.addEventListener('pause', () => {
       if (animationId) {
         cancelAnimationFrame(animationId);
@@ -582,18 +538,12 @@ function setupSpectrogram() {
   }
 }
 
-// Initialize spectrogram after video starts playing (to ensure video source is loaded)
-// This will be called from loadVideo() function
-
-// About overlay functionality
 function openAboutOverlay() {
   if (elements.aboutOverlay) {
     elements.aboutOverlay.classList.add('active');
-    // Pause video when opening about
     if (elements.video && !elements.video.paused) {
       elements.video.pause();
     }
-    // Populate clip sources if we have a session
     populateClipSources();
   }
 }
@@ -685,7 +635,6 @@ async function populateClipSources() {
   }
 }
 
-// About button event listeners
 if (elements.aboutBtn) {
   elements.aboutBtn.addEventListener('click', openAboutOverlay);
 }
@@ -694,7 +643,6 @@ if (elements.aboutCloseBtn) {
   elements.aboutCloseBtn.addEventListener('click', closeAboutOverlay);
 }
 
-// Close about overlay when clicking outside content
 if (elements.aboutOverlay) {
   elements.aboutOverlay.addEventListener('click', (e) => {
     if (e.target === elements.aboutOverlay) {
@@ -703,14 +651,12 @@ if (elements.aboutOverlay) {
   });
 }
 
-// Close about overlay with Escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && elements.aboutOverlay && elements.aboutOverlay.classList.contains('active')) {
     closeAboutOverlay();
   }
 });
 
-// Initialize
 console.log('Lives of Infamous Men - Video Generator initialized');
 console.log('API URL:', API_URL);
 console.log('Uses fixed text with session-based randomization');
