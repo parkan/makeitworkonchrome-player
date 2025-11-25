@@ -538,10 +538,13 @@ function setupSpectrogram() {
   }
 }
 
+let wasPlayingBeforeAbout = false;
+
 function openAboutOverlay() {
   if (elements.aboutOverlay) {
     elements.aboutOverlay.classList.add('active');
-    if (elements.video && !elements.video.paused) {
+    wasPlayingBeforeAbout = elements.video && !elements.video.paused;
+    if (wasPlayingBeforeAbout) {
       elements.video.pause();
     }
     populateClipSources();
@@ -551,6 +554,9 @@ function openAboutOverlay() {
 function closeAboutOverlay() {
   if (elements.aboutOverlay) {
     elements.aboutOverlay.classList.remove('active');
+    if (wasPlayingBeforeAbout && elements.video) {
+      elements.video.play();
+    }
   }
 }
 
