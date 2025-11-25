@@ -474,6 +474,10 @@ h2 {
   backdrop-filter: blur(10px);
 }
 
+.play-icon {
+  padding-bottom: 3px; 
+}
+
 .control-btn:hover {
   background: #1902e3;
   border-color: #f8d6e4;
@@ -782,6 +786,10 @@ h2 {
   font-size: 1rem;
 }
 
+.credits-link {
+  color: #f870a6;
+}
+
 .credit-role {
   color: #888;
   font-size: 0.85rem;
@@ -902,10 +910,10 @@ h2 {
 .clip-source-link {
   display: block;
   font-size: 0.85rem;
-  color: #667eea;
+  color: #4786ea;
   text-decoration: none;
   padding: 0.5rem 0.75rem;
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(52, 71, 156, 0.1);
   border-radius: 4px;
   transition: all 0.2s ease;
   word-break: break-all;
