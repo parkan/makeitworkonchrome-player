@@ -208,14 +208,6 @@ class HLSBuilder {
   }
 
   /**
-   * Slugify a token for filename/key lookup
-   * Must match Python's slugification in prepare_hls_clips.py
-   */
-  slugify(text) {
-    return text.replace(/[^a-z0-9]/g, '_');
-  }
-
-  /**
    * Get static clip for unmatched word
    */
   getStaticClip(token) {
@@ -232,16 +224,14 @@ class HLSBuilder {
              null;
     }
 
-    // Slugify the token to match manifest keys (which are slugified filenames)
-    const slugifiedToken = this.slugify(token);
-    const wordClip = this.staticClips.words?.[slugifiedToken];
-
+    // Look up by original token - manifest keys use original tokens like "it's"
+    const wordClip = this.staticClips.words?.[token];
     if (wordClip) {
       return wordClip;
     }
 
     // No fallback - all needed clips should be pre-generated
-    console.warn(`No static clip found for token: "${token}" (slugified: "${slugifiedToken}")`);
+    console.warn(`No static clip found for token: "${token}"`);
     return null;
   }
 
