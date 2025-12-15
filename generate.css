@@ -555,6 +555,71 @@ h2 {
   }
 }
 
+/* Rotate Prompt - shown on mobile portrait */
+.rotate-prompt {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1a2e;
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+.rotate-content {
+  text-align: center;
+  color: #fff;
+  font-family: 'Comic Neue', cursive;
+}
+
+.rotate-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: rotate-hint 2s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+.rotate-content p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .rotate-prompt {
+    display: flex;
+  }
+}
+
+/* Mobile landscape - use dvh for proper viewport sizing */
+@media (max-height: 500px) and (orientation: landscape) {
+  .player-with-minimap {
+    height: 100dvh;
+    height: 100svh; /* fallback for older browsers */
+  }
+
+  .video-player {
+    height: 100dvh;
+    height: 100svh;
+    max-height: 100dvh;
+  }
+
+  .minimap-container {
+    height: 80dvh;
+    height: 80svh;
+  }
+
+  .custom-controls {
+    bottom: 10px;
+  }
+}
+
 /* Spectrogram Canvas Overlay */
 .spectrogram-canvas {
   position: absolute;
